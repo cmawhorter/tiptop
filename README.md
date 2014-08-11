@@ -1,7 +1,7 @@
 tiptop
 ======
 
-A small library that bolts on strong(er) typing along with overloaded methods to Javascript.  
+A small library that bolts on to Javascript strong(er) typing and support for overloaded methods.  
 
 Currently, only JS primitives and user objects are supported. (So... Number, not integer or float -- but MyCustomObject will work).  It hasn't been tested in the browser, but it _should_ work in modern browsers.  
 
