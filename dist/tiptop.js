@@ -15,7 +15,6 @@
     } else {
       global.fn = factory(global);
     }
-
   }(scope, function (global) {
     'use strict';
     var fn;
