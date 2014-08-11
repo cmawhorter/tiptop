@@ -88,10 +88,10 @@ That said, I'll probably be using it in production in my next project cuz I'm cr
 
 ## Caveats
 
--Null and undefined are not supported. 
--Optional parameters are not supported
--Definitely room for performance enhancements, though it should be pretty good for most scenarios as-is
--When using custom objects, you *must* give them a name. Example:
+* Null and undefined are not supported. 
+* Optional parameters are not supported
+* Definitely room for performance enhancements, though it should be pretty good for most scenarios as-is
+* When using custom objects, you *must* give them a name. Example:
 
 Good:
 ```javascript
