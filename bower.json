@@ -1,0 +1,20 @@
+{
+  "name": "tiptop",
+  "version": "0.0.0",
+  "description": "",
+  "main": "dist/tiptop.js",
+  "author": {
+    "name": "Cory Mawhorter",
+    "email": "cory.mawhorter@gmail.com"
+  },
+  "repository": "corymawhorter/tiptop",
+  "license": "MIT",
+  "dependencies": {},
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
