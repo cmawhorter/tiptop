@@ -111,5 +111,44 @@ describe('TipTop', function() {
       }).bind(self);
       testFunc();
     });
+
+    it('should work on a method and be able to call itself with other signatures', function() {
+      var MyObj = function MyObj() {}
+        , db = null
+        , DB_Save = function(row) {
+            db = row;
+          }
+        , id = 5
+        , name = 'weee'
+        , dt = new Date();
+
+      MyObj.prototype.save = fn.overloaded(
+        function() {
+          return this.save(id);
+        },
+
+        function(id$Number) {
+          return this.save(id$Number, name);
+        },
+
+        function(id$Number, name$String) {
+          return this.save(id$Number, name$String, dt);
+        },
+
+        function(id$Number, name$String, dt$Date) {
+          return DB_Save({
+              id: id$Number
+            , name: name$String
+            , dt: dt$Date
+          });
+        }
+      );
+
+      var obj = new MyObj();
+      obj.save();
+      assert.strictEqual(db.id, id);
+      assert.strictEqual(db.name, name);
+      assert.strictEqual(db.dt, dt);
+    });
   });
 });
