@@ -1,6 +1,9 @@
 module.exports = {
   options: {
-    editorconfig: '.editorconfig'
+    editorconfig: '.editorconfig',
+    ignores: [
+      'js-comments'
+    ]
   },
   gruntfile: {
     src: ['Gruntfile.js', 'tasks/{,*/}*.js']

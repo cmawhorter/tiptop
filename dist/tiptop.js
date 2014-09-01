@@ -1,4 +1,8 @@
 /*! tiptop - v0.0.0
+ *  Release on: 2014-08-31
+ *  Copyright (c) 2014 Cory Mawhorter
+ *  Licensed MIT */
+/*! tiptop - v0.0.0
  *  Release on: 2014-08-11
  *  Copyright (c) 2014 Cory Mawhorter
  *  Licensed MIT */
@@ -17,62 +21,97 @@
     }
   }(scope, function (global) {
     'use strict';
-    var fn;
 
-    var _fn = global.fn
-      , _reParams = /^\s*function\s*\(\s*([^\)]*)\s*\)/i
-      , _reParams2 = /\s*,\s*/
-      , _reType = /^\s*(.*)\$(.*)\s*$/;
+    var _reSplitParams = /\s*,\s*/
+      , _reType = /^\s*(.*)\$(.*)\s*$/
+      , _fn = global.fn
+      , fn;
 
-    function typed(fn) {
-      if (arguments.length !== 1) {
-        throw new Error('Invalid argument length');
+    /**
+     * Wraps a function with stricter typing shtuff.
+     *
+     * @param {Function} the function to be wrapped.
+     * @return {Function} the spiffified function.
+     * @throws {TiptopError} on invalid argument length.
+     * @throws {TiptopError} on invalid argument type.
+     */
+    function typed() {
+      var nullOk = false
+        , fn;
+
+      switch (arguments.length) {
+        case 1:
+          fn = arguments[0];
+        break;
+
+        case 2:
+          nullOk = arguments[0];
+          fn = arguments[1];
+        break;
+
+        default:
+          throw new ArgumentMismatchError('Invalid arguments passed; length mismatch');
       }
 
-      if (typeof arguments[0] !== 'function') {
-        throw new Error('Type passed was not a function');
+      if (nullOk === void 0 || (nullOk !== true && nullOk !== false) || !(fn instanceof Function)) {
+        throw new ArgumentMismatchError('Invalid arguments passed; type mismatch');
       }
 
       var signature = _parse(fn)
         , wrapped = function() {
             if (arguments.length !== signature.length) {
-              throw new Error('Arguments do not match signature');
+              throw new ArgumentMismatchError('Arguments do not match signature <' + signature.join(', ') + '>');
             }
 
             for (var i=0; i < signature.length; i++) {
-              _assertParam.call(this, signature[i], arguments[i]);
+              _assertParam.call(this, signature[i], arguments[i], nullOk);
             }
 
-            // TODO: Add typed return
             return fn.apply(this, arguments);
           };
 
-      wrapped.__fnSignature = signature.length === 0 ? 'void' : signature.join(':');
+      wrapped.__fnSignature = 0 === signature.length ? 'void' : signature.join(':');
 
       return wrapped;
     }
 
-    function overloaded() {
-      if (arguments.length === 0) {
-        throw new Error('Expects at least one argument');
+    function overload() {
+      var args = Array.prototype.slice.call(arguments, 0)
+        , routes = {}
+        , nullOk = false
+        , fns = null;
+
+      if (true === args[0] || false === args[0]) {
+        nullOk = args.shift();
       }
 
-      var routes = {}
-        , args = arguments.length === 1 && typeof arguments[0] !== 'function' ? arguments[0] : arguments; // funcs can be passed as arguments or an function[]
+      if (1 === args.length && args[0] instanceof Array) {
+        fns = args[0];
+      }
+      else if (args[0] instanceof Function) {
+        fns = args;
+      }
 
-      for (var i=0; i < args.length; i++) {
-        var func = typed(args[i]);
-        if (typeof routes[func.__fnSignature] === 'undefined') {
+      if (null === fns || fns.length < 2) {
+        throw new ArgumentMismatchError('Invalid arguments passed; length mismatch');
+      }
+      else if (nullOk === void 0 || (nullOk !== true && nullOk !== false)) {
+        throw new ArgumentMismatchError('Invalid arguments passed; type mismatch');
+      }
+
+      for (var i=0; i < fns.length; i++) {
+        var func = typed(nullOk, fns[i]);
+        if (!routes[func.__fnSignature]) {
           routes[func.__fnSignature] = func;
         }
         else {
-          throw new Error('Duplicate signature detected for overload');
+          throw new TiptopError('Duplicate signature detected for overload');
         }
       }
 
       // router
       return function() {
-        var signature;
+        var signature, method;
 
         if (0 === arguments.length) {
           signature = ['void'];
@@ -84,55 +123,109 @@
           }
         }
 
-        return routes[signature.join(':')].apply(this, arguments);
+        method = routes[signature.join(':')];
+        if (!method) {
+          throw new SignatureNotFoundError('No method found for signature <' + signature.join(', ') + '>');
+        }
+
+        return method.apply(this, arguments);
       };
     }
 
+    // TODO: is this correct?
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error
+    function TiptopError(message) {
+      this.name = 'TiptopError';
+      this.message = message || 'An unknown error occurred';
+    }
+    TiptopError.prototype = new Error();
+    TiptopError.prototype.constructor = TiptopError;
+
+    function SignatureNotFoundError(message) {
+      this.name = 'SignatureNotFoundError';
+      this.message = message || 'Method signature not found';
+    }
+    SignatureNotFoundError.prototype = new TiptopError();
+    SignatureNotFoundError.prototype.constructor = SignatureNotFoundError;
+
+    function ArgumentMismatchError(message) {
+      this.name = 'ArgumentMismatchError';
+      this.message = message || 'Arguments do not match method signature';
+    }
+    ArgumentMismatchError.prototype = new TiptopError();
+    ArgumentMismatchError.prototype.constructor = ArgumentMismatchError;
+
+    function UnnamedObjectError(message) {
+      this.name = 'UnnamedObjectError';
+      this.message = message || 'Object constructor is unnamed';
+    }
+    UnnamedObjectError.prototype = new TiptopError();
+    UnnamedObjectError.prototype.constructor = UnnamedObjectError;
+
     function _getClass(v) {
-      if (typeof v === 'undefined' || null === v) {
-        throw new Error('Undefined and null arguments are not currently supported');
+      if (v === void 0 || null === v) {
+        throw new TiptopError('Undefined and null arguments are not currently supported');
       }
 
       var ctor = v.constructor;
-      if (typeof ctor.name === 'undefined') {
-        throw new Error('Argument must have constructor to infer type');
+      if (!ctor || ctor.name === void 0 || !ctor.name.length) {
+        throw new UnnamedObjectError('Argument must have constructor name to infer type');
       }
       else {
         return ctor.name;
       }
     }
 
-    function _assertParam(paramType, param) {
-      if (typeof param === 'undefined') {
-        throw new Error('Parameter type does not exist');
+    function _assertParam(paramType, param, nullOk) {
+      if (paramType === void 0) {
+        throw new TiptopError('Parameter type does not exist');
       }
 
-      if (typeof param === 'undefined' || null === param) {
-        throw new Error('Undefined and null values are not currently supported');
+      if (true === nullOk && null === param) {
+        return true;
       }
 
-      if ('' === _getClass(param)) {
-        throw new Error('User object does not have name set');
+      var className;
+      try {
+        className = _getClass(param);
+      }
+      catch (err) {
+        if (err instanceof UnnamedObjectError) {
+          throw new UnnamedObjectError('User object does not have name set');
+        }
+        else {
+          throw err;
+        }
       }
 
-      if (_getClass(param) !== paramType) {
-        throw new Error('Parameter type does not match');
+      if (className !== paramType) {
+        throw new ArgumentMismatchError(paramType + ' does not match ' + className);
       }
     }
 
+    function _between(str, a, b) {
+      var idxA = str.indexOf(a)
+        , idxB = str.indexOf(b);
+
+      if (idxA < 0 || idxB < 0) {
+        return false;
+      }
+
+      return str.substring(idxA + 1, idxB);
+    }
+
     function _parse(fn) {
-      // FIXME: iterate chrs for perf boost (maybe?)
       var sfn = fn.toString()
-        , m = sfn.match(_reParams)
-        , params = (null !== m && typeof m[1] !== 'undefined' ? m[1] : '').trim()
+        , params = _between(sfn, '(', ')').trim()
         , signature = [];
 
-      if ('' !== params) {
-        params.split(_reParams2).forEach(function(param) {
-          var paramMatches = param.match(_reType) || []
-            , paramType = paramMatches[2];
-
-          signature.push(paramType);
+      if (params.length) {
+        params.split(_reSplitParams).forEach(function(param) {
+          var paramMatches = param.match(_reType);
+          if (!paramMatches || !paramMatches.length) {
+            throw new TiptopError('Parameter "' + param + '" does not have type defined.');
+          }
+          signature.push(paramMatches[2]);
         });
       }
 
@@ -146,16 +239,20 @@
 
     fn = {
         typed: typed
-      , overloaded: overloaded
-      , noConflict: noConflict
-      , _parse: _parse
-      , _assertParam: _assertParam
-      , _getClass: _getClass
-      , _re: {
-            params: _reParams
-          , sep: _reParams2
-          , argType: _reType
+      , overload: overload
+      , errors: {
+            TiptopError: TiptopError
+          , SignatureNotFoundError: SignatureNotFoundError
+          , ArgumentMismatchError: ArgumentMismatchError
+          , UnnamedObjectError: UnnamedObjectError
         }
+      , 'yar, these be me privates': {
+            _parse: _parse
+          , _between: _between
+          , _assertParam: _assertParam
+          , _getClass: _getClass
+        }
+      , noConflict: noConflict
     };
 
     return fn;

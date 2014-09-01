@@ -1,6 +1,7 @@
 module.exports = {
   options: {
-    banner: '<%= banner %>'
+    banner: '<%= banner %>',
+    sourceMap: true
   },
   dist: {
     src: '<%= concat.dist.dest %>',

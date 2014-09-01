@@ -4,5 +4,9 @@ default:
 build:
   - jshint:lib
   - lintspaces:lib
+  - mochaTest
   - concat
   - uglify
+
+test:
+  - mochaTest

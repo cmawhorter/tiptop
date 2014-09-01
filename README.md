@@ -5,6 +5,12 @@ A small library that bolts on to Javascript strong(er) typing and support for ov
 
 Currently, only JS primitives and user objects are supported. (So... Number, not integer or float -- but MyCustomObject will work).  It hasn't been tested in the browser, but it _should_ work in modern browsers.  
 
+## Why?
+
+I like javascript.  I didn't create this because I think js is broken or that I think it should behave more like [insert language].  I created this to eliminate and streamline repetition in my own code.  
+
+Should you wrap every function with this?  No.  I find it particularly useful when tacked on to my personal API lib in node or when writing reusable objects.
+
 ## Getting Started
 
 To add typing to a function you pass it to TipTop#typed().  To specific types, add `$[type]` after the param name.  e.g. `function(id$Number)` instead of `function(id)`.
@@ -46,7 +52,7 @@ function MyObj() {
   
 }
 
-MyObj.prototype.save = fn.overloaded(
+MyObj.prototype.save = fn.overload(
   function() {
     console.log('one');
   },
@@ -95,7 +101,7 @@ That said, I'll probably be using it in production in my next project cuz I'm cr
 
 Good:
 ```javascript
-var MyObj = function MyObj() { // notice the superfluous "function MyObj()"
+var MyObj = function MyObj() { // notice the extra "function MyObj()"
   
 };
 

@@ -6,36 +6,32 @@ var assert = require('assert')
 describe('TipTop', function() {
   describe('#typed()', function() {
     it('should wrap a function', function() {
-      assert.strictEqual(typeof fn.typed(function(){}), 'function');
+      assert.strictEqual(fn.typed(function(){}) instanceof Function, true);
     });
 
-    it('should error if no function is passed', function() {
-      assert.throws(function() {
-        fn.typed();
-      }, 'Invalid argument length');
-    });
+    it('should error if invalid arguments passed', function() {
+      assert.throws(function() { fn.typed(); }, fn.errors.ArgumentMismatchError);
+      assert.throws(function() { fn.typed(null); }, fn.errors.ArgumentMismatchError);
+      assert.throws(function() { fn.typed(void 0); }, fn.errors.ArgumentMismatchError);
 
-    it('should error if too many functions passed', function() {
-      assert.throws(function() {
-        fn.typed(function(){}, function(){});
-      }, 'Invalid argument length');
-    });
+      assert.throws(function() { fn.typed(function(){}, function(){}); }, fn.errors.ArgumentMismatchError);
+      assert.throws(function() { fn.typed(true, true); }, fn.errors.ArgumentMismatchError);
 
-    it('should error if null passed', function() {
-      assert.throws(function() {
-        fn.typed(null);
-      }, 'Type passed was not a function');
-    });
+      assert.throws(function() { fn.typed(null, null); }, fn.errors.ArgumentMismatchError);
+      assert.throws(function() { fn.typed(void 0, void 0); }, fn.errors.ArgumentMismatchError);
 
-    it('should error if undefined passed', function() {
-      assert.throws(function() {
-        fn.typed();
-      }, 'Type passed was not a function');
+      assert.throws(function() { fn.typed(null, function(){}); }, fn.errors.ArgumentMismatchError);
+      assert.throws(function() { fn.typed(void 0, function(){}); }, fn.errors.ArgumentMismatchError);
     });
 
     it('should wrap a function with arguments', function() {
       var testFunc = function(id$Number){};
-      assert.strictEqual(typeof fn.typed(testFunc), 'function');
+      assert.strictEqual(fn.typed(testFunc) instanceof Function, true);
+    });
+
+    it('should wrap a function with arguments and optionally allow null', function() {
+      var testFunc = function(id$_Number){};
+      assert.strictEqual(fn.typed(testFunc) instanceof Function, true);
     });
 
     it('should return a signature attached to wrapped function', function() {
@@ -60,13 +56,13 @@ describe('TipTop', function() {
       assert.strictEqual(i, 5);
     });
 
-    it('should error when invalid type passed', function() {
+    it('should error when an invalid type is passed', function() {
       var i = 0
         , testFunc = fn.typed(function(id$Number){ i = id$Number; });
 
       assert.throws(function() {
         testFunc('blah');
-      }, 'Arguments do not match signature');
+      }, fn.errors.ArgumentMismatchError);
     });
 
     it('should error when not enough arguments passed', function() {
@@ -75,7 +71,7 @@ describe('TipTop', function() {
 
       assert.throws(function() {
         testFunc('blah');
-      }, 'Arguments do not match signature');
+      }, fn.errors.ArgumentMismatchError);
     });
 
     it('should error when too many arguments passed', function() {
@@ -84,7 +80,7 @@ describe('TipTop', function() {
 
       assert.throws(function() {
         testFunc(1, 2);
-      }, 'Arguments do not match signature');
+      }, fn.errors.ArgumentMismatchError);
     });
 
     it('should work with multiple arguments of different types', function() {
@@ -110,6 +106,20 @@ describe('TipTop', function() {
       }, 'Undefined and null values are not currently supported');
     });
 
+    it('should not error with null when optionally allowed', function() {
+      assert.doesNotThrow(function() {
+        fn.typed(function(id$_Number){ })(null);
+      });
+
+      assert.throws(function() {
+        fn.typed(function(id$Number){ })(null);
+      });
+    });
+
+    it('should blah blah with nullable collisions', function() {
+      // TODO: create test to handle the case where two signatures collide with nullables
+    });
+
     it('should work with objects', function() {
       var v = null
         , t = {}
@@ -130,7 +140,7 @@ describe('TipTop', function() {
       assert.strictEqual(t, v);
       assert.throws(function() {
         testFunc(new AnotherMyObj('a'));
-      }, 'Arguments do not match signature');
+      }, fn.errors.ArgumentMismatchError);
     });
 
     it('should get the return value', function() {
@@ -164,6 +174,18 @@ describe('TipTop', function() {
       });
 
       assert.strictEqual(true, new MyObj().blah());
+    });
+
+    it('should work as a method and optionally allow nulls', function() {
+      var MyObj = function MyObj() {};
+
+      MyObj.prototype.blah = fn.typed(function(x$_Boolean){
+        return x$_Boolean;
+      });
+
+      assert.strictEqual(null, new MyObj().blah(null));
+      assert.strictEqual(true, new MyObj().blah(true));
+      assert.strictEqual(false, new MyObj().blah(false));
     });
 
     it('should work as a method with parameters', function() {
